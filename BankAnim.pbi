@@ -1,4 +1,6 @@
-﻿Structure Clip
+﻿DeclareModule BKA
+  
+Structure Clip
   ImageId.i ; Grab from SpriteId
   
   OriginalImageId.i; Original Sprite before Grab
@@ -51,6 +53,60 @@ Structure Bank
   List Object.Object()
 EndStructure
 
+;- Declare Clip
+Declare.i AddClipToBoard(*Board.Board,X.l,Y.l,Width.l,Height.l)
+Declare.b LoadClipsFromFile(FileName.s,*Board.Board)
+Declare.i GetClipFromIndex(*Board.Board,clipIndex.l)
+Declare SetXmlClip(*ClipsNode,*Board.Board,Map ClipIndex.s())
+Declare GetXmlClip(*ClipsNode,*Board)
+;- Declare Anim
+Declare.i AddAnimToBoard(*Board.Board,Name.s="",Loop.b=#True)
+Declare.i AddFrameToAnim(*Clip,*Anim.Anim,Delay.l=150,Opacity.l=255)
+Declare.i SetAnim(*Anim.Anim,*Board,stringToAnim.S,Loop.b=#True,Name.s="")
+Declare.i GetAnimByName(*Board.Board,Name.s)
+Declare.i SetFrameOpacity(*Frame.Frame,Opacity.l=255)
+Declare.i SetFrameDelay(*Frame.Frame,Delay.l=150)
+Declare SetXmlFrame(*AnimNode,*Anim.Anim,Map ClipIndex.s())
+Declare SetXmlAnim(*BoardNode,*Board.Board,Map ClipIndex.s())
+Declare GetXmlFrame(*AnimNode,*Board.Board,*Anim)
+Declare GetXmlAnim(*AnimsNode,*Board)
+;-Declare Board
+Declare.i AddBoardToBank(ImageId.i,Name.s,*Bank.Bank)
+Declare.b IsBoardExist(*Board,*Bank.Bank=0)
+Declare.i GetBoardByName(Name.s,*Bank.Bank=0)
+Declare.s GetBoardNameFromAnim(*Bank.Bank,*Anim)
+Declare.s Base64EncodeFile(FileName.s) ; Encode a file to a Base64 string.
+Declare.l Base64CatchImage(Image.l, Base64.s, flags.l = 0) ; Create a new image from a Base64 string.
+Declare SetXmlBoard(*BoardsNode,*Bank.Bank,Map ClipIndex.s())
+Declare GetXmlBoard(*BoardsNode,*Bank)
+;-Declare Model
+Declare.i NewModel(*Bank.Bank,Name.s="")
+Declare.b IsModelExist(*Model,*Bank.Bank=0)
+Declare.i GetModelByName(Name.s,*Bank.Bank=0)
+Declare AddAnimToModel(*Anim,*Model.Model)
+Declare.i GetFrameFromModel(*Model.Model,CurrentAnimIndex.l,FrameIndex.l)
+Declare SetXmlModel(*BankNode,*Bank.Bank)
+Declare GetXmlModel(*ModelsNode,*Bank)
+;-Declare Object
+Declare.i NewObject(*Bank.Bank,*Model.Model=0,Name.s="")
+Declare.b IsObjectExist(*Object,*Bank.Bank=0)
+Declare.i GetObjectByName(Name.s,*Bank.Bank=0)
+Declare LinkModelToObject(*Model.Model,*Object.object,Name.s="")
+Declare.b SetObjectAnim(*Object.Object,Index.i)
+Declare PauseObjectAnim(*Object.Object,val.b)
+Declare RenderObject(*Object.Object)
+;-Declare Bank
+Declare.b IsBankExist(*Bank)
+Declare.i NewBank(Name.s="")
+Declare SetXmlBank(*MainNode,*Bank.Bank)
+Declare GetXmlBank(*BankNode)
+Declare SaveBank(*Bank.Bank,Name.s="")
+Declare CheckXml(Xml.i,FileName.s)
+Declare LoadBank(Name.s)
+EndDeclareModule
+
+Module BKA
+  
 Global NewList Bank.Bank()
 
 
@@ -62,7 +118,7 @@ Global NewList Bank.Bank()
 ;               Name = The Name you want to use
 ;               *Bank = Bank Pointer 
 ;               
-;      Return:  Board pointer
+;      Return:  Clip pointer
 ;===================================================================
 Procedure.i AddClipToBoard(*Board.Board,X.l,Y.l,Width.l,Height.l)
   AddElement(*Board\Clip())
@@ -75,6 +131,13 @@ Procedure.i AddClipToBoard(*Board.Board,X.l,Y.l,Width.l,Height.l)
   ProcedureReturn *Board\Clip()
 EndProcedure
 
+;===================================================================
+;              Load Clips from .ini file
+;      Input:   FileName.s
+;               *Board = Board Pointer
+
+;      Return:  #True / #False
+;===================================================================
 Procedure.b LoadClipsFromFile(FileName.s,*Board.Board)
   If OpenPreferences(GetFilePart(fileName,#PB_FileSystem_NoExtension)+".ini")
     ExaminePreferenceGroups()
@@ -95,6 +158,13 @@ Procedure.b LoadClipsFromFile(FileName.s,*Board.Board)
   EndIf 
 EndProcedure
 
+;===================================================================
+;              Get Clip Pointer From Index in Board
+;      Input:   FileName.s
+;               *Board = Board Pointer
+;               clipIndex.l = Index
+;      Return:  No Return
+;===================================================================
 Procedure.i GetClipFromIndex(*Board.Board,clipIndex.l)
   ;If IsBoardExist(*Board)=#True
   SelectElement(*Board\Clip(),clipIndex)
@@ -104,6 +174,14 @@ Procedure.i GetClipFromIndex(*Board.Board,clipIndex.l)
   ;EndIf
 EndProcedure
 
+
+;===================================================================
+;              Set Clip Data to Xml
+;      Input:   *ClipsNode = XML node pointer
+;               *Board = Board Pointer
+;               Map ClipIndex.s() = Map clip index to clip pointer 
+;      Return:  No Return
+;===================================================================
 Procedure SetXmlClip(*ClipsNode,*Board.Board,Map ClipIndex.s())
   ForEach *Board\Clip()
     ClipIndex(Str(*Board\Clip()))=Str(ListIndex(*Board\Clip()))
@@ -116,6 +194,13 @@ Procedure SetXmlClip(*ClipsNode,*Board.Board,Map ClipIndex.s())
   Next
 EndProcedure
 
+;===================================================================
+;              Get Clip Data from Xml
+;      Input:   *ClipsNode = XML node pointer
+;               *Board = Board Pointer
+;              
+;      Return:  No Return
+;===================================================================
 Procedure GetXmlClip(*ClipsNode,*Board)
   For c=1 To XMLChildCount(*ClipsNode)
     *ClipNode=ChildXMLNode(*ClipsNode,c)
@@ -179,6 +264,15 @@ Procedure.i AddFrameToAnim(*Clip,*Anim.Anim,Delay.l=150,Opacity.l=255)
   ProcedureReturn *Anim\Frame()
 EndProcedure
 
+;===================================================================
+;              Set Anim
+;      Input:   *Anim = Anim pointer
+;               *Board = Board Pointer
+;               stringToAnim.s = string with index list  ex:"1,2,3,4,5"
+;               Loop = #True / #False You can Loop anim or not 
+;               Name.s = Anim Name ex:"Hero Walk Up"
+;      Return: No Return
+;===================================================================
 Procedure.i SetAnim(*Anim.Anim,*Board,stringToAnim.S,Loop.b=#True,Name.s="")
   Protected z.l
   Protected *Clip
@@ -224,8 +318,8 @@ EndProcedure
 
 ;===================================================================
 ;              Set Frame Delay
-;      Input:   *Frame = Frame Pointer
-;               Delay = Frame delay in millisecond 
+;      Input:  *Frame = Frame Pointer
+;              Delay.l = Delay in millisecond
 ;               
 ;      Return:  No Return
 ;===================================================================
@@ -233,6 +327,14 @@ Procedure.i SetFrameDelay(*Frame.Frame,Delay.l=150)
   *Frame\Delay=Delay
 EndProcedure
 
+;===================================================================
+;              Set Frame to XML
+;      Input:  *AnimNode = XML Node pointer
+;              *Anim = *Anim pointer
+;              Map ClipIndex.s() = Map clip index to clip pointer 
+;               
+;      Return:  No Return
+;===================================================================
 Procedure SetXmlFrame(*AnimNode,*Anim.Anim,Map ClipIndex.s())
   ForEach *Anim\Frame()
     *FrameNode=CreateXMLNode(*AnimNode, "Frame")
@@ -243,7 +345,14 @@ Procedure SetXmlFrame(*AnimNode,*Anim.Anim,Map ClipIndex.s())
   Next
 EndProcedure
 
-
+;===================================================================
+;              Set Anim to XML
+;      Input:  *BoardNode = XML Node pointer
+;              *Board = *Board pointer
+;              Map ClipIndex.s() = Map clip index to clip pointer 
+;               
+;      Return:  No Return
+;===================================================================
 Procedure SetXmlAnim(*BoardNode,*Board.Board,Map ClipIndex.s())
   ForEach *Board\Anim()
     *AnimNode=CreateXMLNode(*BoardNode, "Anim")
@@ -253,6 +362,14 @@ Procedure SetXmlAnim(*BoardNode,*Board.Board,Map ClipIndex.s())
   Next
 EndProcedure
 
+;===================================================================
+;              Get Frame to XML
+;      Input:  *AnimNode = XML Node pointer
+;              *Board = *Board pointer
+;              *Anim = *Anim Pointer 
+;               
+;      Return:  No Return
+;===================================================================
 Procedure GetXmlFrame(*AnimNode,*Board.Board,*Anim)
   For f=1 To XMLChildCount(*AnimNode)
     *FrameNode=ChildXMLNode(*AnimNode,f)
@@ -276,9 +393,15 @@ Procedure GetXmlFrame(*AnimNode,*Board.Board,*Anim)
       AddFrameToAnim(*Board\Clip(),*Anim,Delay,Opacity)
     EndIf
   Next
-  
 EndProcedure
 
+;===================================================================
+;              Get Anim From Xml
+;      Input:  *AnimsNode = XML Node pointer
+;              *Board = *Board pointer
+;               
+;      Return:  No Return
+;===================================================================
 Procedure GetXmlAnim(*AnimsNode,*Board)
   For a=1 To XMLChildCount(*AnimsNode)
     *AnimNode=ChildXMLNode(*AnimsNode,a)
@@ -298,7 +421,6 @@ Procedure GetXmlAnim(*AnimsNode,*Board)
       GetXmlFrame(*AnimNode,*Board,*Anim)
     EndIf
   Next
-  
 EndProcedure
 
 ;-Board 
@@ -374,6 +496,13 @@ Procedure.i GetBoardByName(Name.s,*Bank.Bank=0)
   ProcedureReturn #False
 EndProcedure
 
+;===================================================================
+;              Get Board Name From Anim
+;      Input:   *Bank.Bank = Bank pointer
+;               *Anim = Anim Pointer
+;               
+;      Return:  String with anim name
+;===================================================================
 Procedure.s GetBoardNameFromAnim(*Bank.Bank,*Anim)
   ForEach *Bank\Board()
     ForEach  *Bank\Board()\Anim()
@@ -385,6 +514,14 @@ Procedure.s GetBoardNameFromAnim(*Bank.Bank,*Anim)
   Debug "Error GetAnimSpriteSheetName()"
 EndProcedure
 
+;===================================================================
+;              Encode a file to a Base64 string.
+;     Author : Flype
+;     Source : https://www.purebasic.fr/english/viewtopic.php?f=12&t=25152
+;
+;     Input:  FileName.s = Filepath 
+;     Return : file convert to String
+;===================================================================
 Procedure.s Base64EncodeFile(FileName.s) ; Encode a file to a Base64 string.
   
   Protected FileID.l, FileSize.l, FileBuff.l, Base64Size.l, Base64Buff.s
@@ -406,6 +543,17 @@ Procedure.s Base64EncodeFile(FileName.s) ; Encode a file to a Base64 string.
   ProcedureReturn Base64Buff
   
 EndProcedure
+
+;===================================================================
+;              Create a new image from a Base64 string.
+;     Author : Flype
+;     Source : https://www.purebasic.fr/english/viewtopic.php?f=12&t=25152
+;
+;     Input:  Image.l = Number or #PB_Any
+;             Base64.s = String with Base64 image encoded
+;             flags.l = ImageSize
+;     Return : ImageId
+;===================================================================
 Procedure.l Base64CatchImage(Image.l, Base64.s, flags.l = 0) ; Create a new image from a Base64 string.
   
   Protected Base64Size.l, ImageBuff.l, ImageSize.l, result.l
@@ -427,6 +575,14 @@ Procedure.l Base64CatchImage(Image.l, Base64.s, flags.l = 0) ; Create a new imag
   
 EndProcedure
 
+;===================================================================
+;              Set Board to XML
+;      Input:  *BoardsNode = XML Node pointer
+;              *Bank= Bank Pointer
+;              Map ClipIndex.s() = Map clip index to clip pointer 
+;               
+;      Return:  No Return
+;===================================================================
 Procedure SetXmlBoard(*BoardsNode,*Bank.Bank,Map ClipIndex.s())
   ForEach *Bank\Board()
     *BoardNode=CreateXMLNode(*BoardsNode, "Board")
@@ -441,6 +597,13 @@ Procedure SetXmlBoard(*BoardsNode,*Bank.Bank,Map ClipIndex.s())
   Next
 EndProcedure
 
+;===================================================================
+;              Get Board From XML
+;      Input:  *BoardsNode = XML Node pointer
+;              *Bank= Bank Pointer
+;               
+;      Return:  No Return
+;===================================================================
 Procedure GetXmlBoard(*BoardsNode,*Bank)
   For b=1 To XMLChildCount(*BoardsNode)
     *BoardNode=ChildXMLNode(*BoardsNode,b)
@@ -518,6 +681,13 @@ Procedure.b IsModelExist(*Model,*Bank.Bank=0)
   ProcedureReturn #False
 EndProcedure
 
+;===================================================================
+;              Get Model By Name
+;      Input:   Name  = Model Name
+;               *Bank = Bank Pointer 
+;               
+;      Return:  Model Pointer or  #False if no found
+;=================================================================== 
 Procedure.i GetModelByName(Name.s,*Bank.Bank=0)
   If *Bank=0
     ForEach Bank()
@@ -539,6 +709,13 @@ Procedure.i GetModelByName(Name.s,*Bank.Bank=0)
   ProcedureReturn #False
 EndProcedure
 
+;===================================================================
+;              Add Anim to Model
+;      Input:   *Anim = Anim Pointer
+;               *Model = Model Pointer 
+;               
+;      Return:  No return
+;=================================================================== 
 Procedure AddAnimToModel(*Anim,*Model.Model)
   If IsModelExist(*Model)
     AddElement(*Model\anim())
@@ -586,6 +763,13 @@ Procedure.i GetFrameFromModel(*Model.Model,CurrentAnimIndex.l,FrameIndex.l)
   EndIf
 EndProcedure
 
+;===================================================================
+;              Set Model to Xml
+;      Input:   *BankNode= Xml node pointer
+;               *Bank = Bank Pointer 
+;               
+;      Return:  No return
+;=================================================================== 
 Procedure SetXmlModel(*BankNode,*Bank.Bank)
   ForEach *Bank\Model()
     *ModelNode=CreateXMLNode(*BankNode, "Model")
@@ -599,6 +783,13 @@ Procedure SetXmlModel(*BankNode,*Bank.Bank)
   Next
 EndProcedure
 
+;===================================================================
+;              Get Model from Xml
+;      Input:   *ModelsNode= Xml node pointer
+;               *Bank = Bank Pointer 
+;               
+;      Return:  No return
+;=================================================================== 
 Procedure GetXmlModel(*ModelsNode,*Bank)
   For m=1 To XMLChildCount(*ModelsNode)
     *ModelNode=ChildXMLNode(*ModelsNode,m)
@@ -723,7 +914,14 @@ Procedure.i GetObjectByName(Name.s,*Bank.Bank=0)
   ProcedureReturn #False
 EndProcedure
 
-
+;===================================================================
+;              Link Model to Object
+;      Input:   *Model = model pointer
+;               *Object.Object = Object Pointer
+;               Name = 
+;               
+;      Return:  Object pointer if Found or #False
+;===================================================================
 Procedure LinkModelToObject(*Model.Model,*Object.object,Name.s="")
   If *Model<>0
     *Object\Model=*Model
@@ -735,6 +933,13 @@ Procedure LinkModelToObject(*Model.Model,*Object.object,Name.s="")
   EndIf
 EndProcedure
 
+;===================================================================
+;              Change Anim index on Object
+;      Input:   *Object = Object pointer
+;               Index.i = Anim Index
+;               
+;      Return:  Object pointer if Found or #False
+;===================================================================
 Procedure.b SetObjectAnim(*Object.Object,Index.i)
   If Index>=0 And Index<ListSize(*Object\Model\anim())
     *Object\CurrentAnimIndex=Index
@@ -745,6 +950,13 @@ Procedure.b SetObjectAnim(*Object.Object,Index.i)
   EndIf 
 EndProcedure
 
+;===================================================================
+;              Pause Object Animation
+;      Input:   *Object = Object pointer
+;               val = #True / #False
+;               
+;      Return:  No Return
+;===================================================================
 Procedure PauseObjectAnim(*Object.Object,val.b)
   If val=#True
     *Object\NextFrameTime=-1
@@ -753,6 +965,12 @@ Procedure PauseObjectAnim(*Object.Object,val.b)
   EndIf 
 EndProcedure
 
+;===================================================================
+;              Render Object
+;      Input:   *Object = Object pointer
+;               
+;      Return:  No Return
+;===================================================================
 Procedure RenderObject(*Object.Object)
   Protected Opacity.c=255
   Protected Event.l
@@ -786,11 +1004,11 @@ Procedure RenderObject(*Object.Object)
         If IsImage(*Frame\Clip\ImageId)
           *Object\CurrentImageId=*Frame\Clip\ImageID     
         Else 
-          Debug "RenderModel() Error : Clip Image Id not initialized AnimIndex="+Str(*Object\CurrentAnimIndex)+" FrameIndex="+Str(*Object\FrameIndex)
+          Debug "⚠️ RenderModel() Error : Clip Image Id not initialized AnimIndex="+Str(*Object\CurrentAnimIndex)+" FrameIndex="+Str(*Object\FrameIndex)
           ProcedureReturn #False
         EndIf
       Else
-        Debug "RenderModel() Error : *Frame not initialized AnimIndex="+Str(*Object\CurrentAnimIndex)+" FrameIndex="+Str(*Object\FrameIndex)
+        Debug "⚠️ RenderModel() Error : *Frame not initialized AnimIndex="+Str(*Object\CurrentAnimIndex)+" FrameIndex="+Str(*Object\FrameIndex)
         ProcedureReturn #False
       EndIf 
     EndIf 
@@ -800,7 +1018,15 @@ Procedure RenderObject(*Object.Object)
     DrawAlphaImage(ImageID(*Object\CurrentImageId),*Object\Coord\x-*Frame\Anchor\x,*Object\Coord\y-*Frame\Anchor\y,*Frame\Opacity)
   EndIf 
 EndProcedure
+
 ;- Bank
+
+;===================================================================
+;              Check if Bank Exist
+;      Input:   *Bank = Bank pointer
+;               
+;      Return:  No Return
+;===================================================================
 Procedure.b IsBankExist(*Bank)
   ForEach Bank()
     If Bank()=*Bank
@@ -810,6 +1036,12 @@ Procedure.b IsBankExist(*Bank)
   ProcedureReturn #False
 EndProcedure
 
+;===================================================================
+;              Create New Bank
+;      Input:   Name = Bank Name
+;               
+;      Return:  Return Bank Pointer
+;===================================================================
 Procedure.i NewBank(Name.s="")
   AddElement(Bank())
   If Name=""
@@ -819,6 +1051,13 @@ Procedure.i NewBank(Name.s="")
   ProcedureReturn Bank()
 EndProcedure
 
+;===================================================================
+;              Set Bank to Xml
+;      Input:   *MainNode = Xml Node
+;               *Bank = Bank Pointer
+;               
+;      Return:  No return
+;===================================================================
 Procedure SetXmlBank(*MainNode,*Bank.Bank)
   NewMap ClipIndex.s()
   *BankNode= CreateXMLNode(*MainNode, "Bank")
@@ -829,6 +1068,12 @@ Procedure SetXmlBank(*MainNode,*Bank.Bank)
   SetXmlModel(*ModelsNode,*Bank)
 EndProcedure
 
+;===================================================================
+;              Get Bank from Xml
+;      Input:   *BankNode = Xml Node
+;               
+;      Return:  Return bank pointer
+;===================================================================
 Procedure GetXmlBank(*BankNode)
   ExamineXMLAttributes(*BankNode)
   Protected Name.s
@@ -848,21 +1093,35 @@ Procedure GetXmlBank(*BankNode)
       Case "Models"
         GetXmlModel(*ChildNode,*Bank)
       Default
-        Debug "GetXmlBank() Error XML "+GetXMLNodeName(*ChildNode)+" Unknow"
+        Debug "⚠️ GetXmlBank() Error XML "+GetXMLNodeName(*ChildNode)+" Unknow"
     EndSelect
   Next
   ProcedureReturn *Bank
 EndProcedure
 
+;===================================================================
+;              Save Bank
+;      Input:   *Bank = Bank Pointer
+;               Name.s= Filename
+;               
+;      Return:  No return
+;===================================================================
 Procedure SaveBank(*Bank.Bank,Name.s="")
   Protected.i Xml,MainNode,BankNode,SpriteSheetNode,ClipNode,AnimNode
   Xml = CreateXML(#PB_Any)
   *MainNode=RootXMLNode(xml)
   SetXmlBank(*MainNode,*Bank.Bank)
   FormatXML(XML, #PB_XML_ReFormat,4)
-  SaveXML(xml, "Bank_"+Name+".xml")
+  SaveXML(xml, Name)
 EndProcedure
 
+;===================================================================
+;              Check Xml
+;      Input:   Xml = XmlId
+;               FileName.s= Filename
+;               
+;      Return:  #True Xml is Ok / #False ... Xml Error
+;===================================================================
 Procedure CheckXml(Xml.i,FileName.s)
   Protected Message.s
   If XMLStatus(xml) <> #PB_XML_Success
@@ -876,52 +1135,74 @@ Procedure CheckXml(Xml.i,FileName.s)
   EndIf
 EndProcedure
 
+;===================================================================
+;              Load Bank
+;      Input:   Name = FilneNamedir
+;               
+;      Return:  Bank Pointer
+;===================================================================
 Procedure.i LoadBank(Name.s)
-
-   Xml=LoadXML(#PB_Any,"Bank_"+Name+".xml")
+  If FileSize(Name)>0
+   Xml=LoadXML(#PB_Any,Name)
     If Xml<>0
-      If CheckXml(Xml,"Bank_"+Name+".xml")=#False
+      If CheckXml(Xml,Name)=#False
         Debug "XML Error"
         End
       EndIf
       *MainNode=MainXMLNode(Xml)
       ProcedureReturn GetXmlBank(*MainNode)
     EndIf
-    
-EndProcedure
+  Else
+    Debug "⚠️ LoadBank() File "+Chr(34)+Name+Chr(34)+" No exist !"
+    End
+  EndIf 
+  EndProcedure
+  
+EndModule
 
-;- Test
+
+;- Demo
+
 CompilerIf #PB_Compiler_IsMainFile
+  
+  Enumeration
+    #Mode_Create_Bank
+    #Mode_Load_Bank
+  EndEnumeration
+  
+  Mode=#Mode_Create_Bank;TODO change to try
+    
   InitSprite()
   UsePNGImageDecoder()
   UsePNGImageEncoder()
   
   Define winMain.i = OpenWindow(#PB_Any,0,0,1024,800,"Press [Esc] to close",#PB_Window_ScreenCentered | #PB_Window_SystemMenu)
   OpenWindowedScreen(WindowID(winMain), 0, 0,1024,800, 1, 0, 0)
-  Define *Bank=LoadBank("Testouille")
-  Define *Model=GetModelByName("Hero",*Bank)
-;   Define *Bank=NewBank()
-;   Define *Board=AddBoardToBank(LoadImage(#PB_Any,"24493.png"),"Vieux",*Bank)
-;   LoadClipsFromFile("24493.png",*Board)
-;   
-;   Define *Anim=AddAnimToBoard(*Board)
-;   SetAnim(*Anim,*Board,"1,2,3,4,5,6")
-;   *Anim=AddAnimToBoard(*Board)
-;   SetAnim(*Anim,*Board,"7,8,9,10,11,12")
-;   Define *Model=NewModel(*Bank,"Hero")
-;   AddAnimToModel(*Anim,*Model)
-   Define *Object=NewObject(*Bank,*Model)
-;   SaveBank(*Bank,"Testouille")
+  UseModule BKA
   
-  ;Obj::SetObjectToModel(*Model,*Object)
-  ;*Anim=Obj::NewAnim(*SpriteSheet)
-  ;Obj::SetAnim(*Anim,*SpriteSheet,"7,8,9,10,11,12")
-  ;Obj::AddAnimToModel(*Anim,*Model)
-  SaveBank(*Bank,"test2")
-  ;Debug"______2
-  ;Obj::LoadBank(*Bank,"test")
-  ;Define *Model=Obj::GetModelPtr(*Bank,"Hero")
-  ;Obj::SetObjectToModel(*Model,*Object)
+  Select Mode
+    Case #Mode_Create_Bank
+      Define *Bank=NewBank()
+      Define *Board=AddBoardToBank(LoadImage(#PB_Any,"24493.png"),"Vieux",*Bank)
+      LoadClipsFromFile("24493.png",*Board)
+      ; First Animation
+      Define *Anim=AddAnimToBoard(*Board)
+      SetAnim(*Anim,*Board,"1,2,3,4,5,6")
+      ; Second Animation
+      *Anim=AddAnimToBoard(*Board)
+      SetAnim(*Anim,*Board,"7,8,9,10,11,12")
+      Define *Model=NewModel(*Bank,"Hero")
+      AddAnimToModel(*Anim,*Model)
+      SaveBank(*Bank,"Bank_Testouille.xml")
+      Define *Object=NewObject(*Bank,*Model)
+       
+    Case #Mode_Load_Bank
+      Define *Bank=LoadBank("Bank_Testouille.xml")
+      Define *Model=GetModelByName("Hero",*Bank)
+      Define *Object=NewObject(*Bank,*Model)
+      
+  EndSelect
+
   Define Event.i,Val.b
   Repeat
     Repeat
@@ -956,12 +1237,12 @@ CompilerIf #PB_Compiler_IsMainFile
   ForEver 
   
 CompilerEndIf 
-; IDE Options = PureBasic 6.00 Beta 1 (Windows - x64)
-; CursorPosition = 258
-; FirstLine = 255
+; IDE Options = PureBasic 6.00 Beta 2 (Windows - x64)
+; CursorPosition = 1163
+; FirstLine = 1163
 ; Folding = --------
 ; EnableXP
 ; CompileSourceDirectory
-; EnableCompileCount = 38
+; EnableCompileCount = 50
 ; EnableBuildCount = 0
 ; EnableExeConstant
